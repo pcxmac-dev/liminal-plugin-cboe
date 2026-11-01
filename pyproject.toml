@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "massive-plugin-cboe"
+version = "1.2.0"  # the plugin's own release (CHANGELOG.md); the app shows it on the Plugins view
+description = "Cboe for Massive: daily history of Cboe's indices (VIX from 1990), no key."
+readme = "README.md"
+requires-python = ">=3.10"
+# the app it plugs into; which of its releases can load it is the plugin API the plugin declares
+# (PLUGIN.api, checked when the app loads it), not this line
+dependencies = ["massive-collate"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.entry-points."massive_collate.providers"]
+cboe = "massive_plugin_cboe:PLUGIN"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
