@@ -1,8 +1,8 @@
-"""Cboe (cboe.com) for Massive: daily history of Cboe's indices (VIX from 1990), no key; a closed archive.
+"""Cboe (cboe.com) for Liminal: daily history of Cboe's indices (VIX from 1990), no key; a closed archive.
 
-A Massive plugin released on its own (massive_collate.sources.registry: Provider), registered under
-the entry point group `massive_collate.providers`. Its version is its distribution's (pyproject.toml);
-it relies on plugin API 1.6 and nothing of the app outside it (docs/ARCHITECTURE.md in massive:
+A Liminal plugin released on its own (liminal.sources.registry: Provider), registered under
+the entry point group `liminal.providers`. Its version is its distribution's (pyproject.toml);
+it relies on plugin API 1.6 and nothing of the app outside it (docs/ARCHITECTURE.md in liminal:
 "Providers are plugins").
 """
 from __future__ import annotations
@@ -12,12 +12,12 @@ import io
 from datetime import date, datetime
 from typing import Iterator
 
-from massive_collate.config import Tier
-from massive_collate.errors import NotEntitled, SourceError
-from massive_collate.models import Instrument
-from massive_collate.sources.archive import ET, Archive, bounds, ms
-from massive_collate.sources.http import PublicClient
-from massive_collate.sources.registry import Provider, public_client
+from liminal.config import Tier
+from liminal.errors import NotEntitled, SourceError
+from liminal.models import Instrument
+from liminal.sources.archive import ET, Archive, bounds, ms
+from liminal.sources.http import PublicClient
+from liminal.sources.registry import Provider, public_client
 
 BASE_URL = "https://cdn-api.cboe.com/api/global/us_indices/daily_prices"
 # its plan and caps: a public file server with no published limits, one file an index

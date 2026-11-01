@@ -1,4 +1,4 @@
-"""Fakes and guards copied from massive's tests/conftest.py: tests never read the user's real keys
+"""Fakes and guards copied from liminal's tests/conftest.py: tests never read the user's real keys
 or limits, and never send a request (a FakeSession answers)."""
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def no_saved_keys(monkeypatch):
     """Tests never read the user's saved keys (their user environment variables)."""
-    from massive_collate import config
+    from liminal import config
 
     monkeypatch.setattr(config, "saved_user_keys", lambda: {})
 
@@ -16,7 +16,7 @@ def no_saved_keys(monkeypatch):
 @pytest.fixture(autouse=True)
 def no_found_limits(monkeypatch):
     """Nor the limits kept from the user's last capability scans (in their database)."""
-    from massive_collate.sources import registry
+    from liminal.sources import registry
 
     monkeypatch.setattr(registry, "found_limits", lambda name, settings: [])
 

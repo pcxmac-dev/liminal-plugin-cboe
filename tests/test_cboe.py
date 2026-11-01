@@ -7,16 +7,16 @@ from importlib.metadata import version
 
 import pytest
 
-from massive_collate import composite
-from massive_collate.config import load_settings
-from massive_collate.errors import NotEntitled, SourceError
-from massive_collate.sources import is_archive, markets, provider, rate_window, registry, supports
-from massive_collate.sources.archive import ET, ms
-from massive_collate.sources.http import PublicClient
-from massive_collate.symbols import resolve
+from liminal import composite
+from liminal.config import load_settings
+from liminal.errors import NotEntitled, SourceError
+from liminal.sources import is_archive, markets, provider, rate_window, registry, supports
+from liminal.sources.archive import ET, ms
+from liminal.sources.http import PublicClient
+from liminal.symbols import resolve
 
-import massive_plugin_cboe
-from massive_plugin_cboe import PER_DAY, PER_RUN, TIER, CboeSource
+import liminal_plugin_cboe
+from liminal_plugin_cboe import PER_DAY, PER_RUN, TIER, CboeSource
 
 from .conftest import FakeResponse, FakeSession
 
@@ -59,12 +59,12 @@ def test_the_app_loads_it_from_this_package_with_its_own_version():
     registry.reload()
     p = provider("cboe")
     assert p is not None, dict(registry.errors())
-    assert p.origin == "package: massive-plugin-cboe (massive_plugin_cboe:PLUGIN)"
-    assert p.version == version("massive-plugin-cboe") and massive_plugin_cboe.PLUGIN.version == ""
+    assert p.origin == "package: liminal-plugin-cboe (liminal_plugin_cboe:PLUGIN)"
+    assert p.version == version("liminal-plugin-cboe") and liminal_plugin_cboe.PLUGIN.version == ""
     assert registry.api_refusal(p.api) is None
     assert not [why for where, why in registry.errors() if "cboe" in where or "cboe" in why]
     row = {r["name"]: r for r in registry.menu()}["cboe"]
-    assert (row["version"], row["api"]) == (version("massive-plugin-cboe"), "1.6")
+    assert (row["version"], row["api"]) == (version("liminal-plugin-cboe"), "1.6")
 
 
 def test_it_keeps_the_facts_it_had_built_in():

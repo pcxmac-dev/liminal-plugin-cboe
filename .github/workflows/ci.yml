@@ -6,7 +6,7 @@ on:
 
 env:
   # the app release it is tested against: the branch offering its plugin API (1.6)
-  MASSIVE_REF: feature/collector
+  LIMINAL_REF: feature/collector
 
 jobs:
   test:
@@ -20,6 +20,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: python -m pip install "massive-collate @ git+https://github.com/pcxmac-dev/massive@${{ env.MASSIVE_REF }}"
+      - run: python -m pip install "liminal @ git+https://github.com/pcxmac-dev/liminal@${{ env.LIMINAL_REF }}"
       - run: python -m pip install -e ".[dev]"
       - run: python -m pytest -q
