@@ -12,12 +12,12 @@ import io
 from datetime import date, datetime
 from typing import Iterator
 
-from liminal.config import Tier
-from liminal.errors import NotEntitled, SourceError
-from liminal.models import Instrument
-from liminal.sources.archive import ET, Archive, bounds, ms
-from liminal.sources.http import PublicClient
-from liminal.sources.registry import Provider, public_client
+from liminal_lib.config import Tier
+from liminal_lib.errors import NotEntitled, SourceError
+from liminal_lib.models import Instrument
+from liminal_lib.sources.archive import ET, Archive, bounds, ms
+from liminal_lib.sources.http import PublicClient
+from liminal_lib.sources.registry import Provider, public_client
 
 BASE_URL = "https://cdn-api.cboe.com/api/global/us_indices/daily_prices"
 # its plan and caps: a public file server with no published limits, one file an index

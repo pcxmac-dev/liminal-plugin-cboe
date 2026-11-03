@@ -7,13 +7,13 @@ from importlib.metadata import version
 
 import pytest
 
-from liminal import composite
-from liminal.config import load_settings
-from liminal.errors import NotEntitled, SourceError
-from liminal.sources import is_archive, markets, provider, rate_window, registry, supports
-from liminal.sources.archive import ET, ms
-from liminal.sources.http import PublicClient
-from liminal.symbols import resolve
+from liminal_lib import composite
+from liminal_lib.config import load_settings
+from liminal_lib.errors import NotEntitled, SourceError
+from liminal_lib.sources import is_archive, markets, provider, rate_window, registry, supports
+from liminal_lib.sources.archive import ET, ms
+from liminal_lib.sources.http import PublicClient
+from liminal_lib.symbols import resolve
 
 import liminal_plugin_cboe
 from liminal_plugin_cboe import PER_DAY, PER_RUN, TIER, CboeSource

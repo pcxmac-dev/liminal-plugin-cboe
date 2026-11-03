@@ -1,11 +1,11 @@
 # liminal-plugin-cboe
 
-Cboe for [Liminal](https://github.com/pcxmac-dev/liminal): the daily history of Cboe's indices
+Cboe for [Liminal](https://github.com/pcxmac-dev/liminal-app): the daily history of Cboe's indices
 (VIX from 1990, VIX9D, VIX3M, VVIX, SKEW and the other volatility indices), read from Cboe's public
 history files. No key. It is a closed archive: once an index's history is in, it is not asked again.
 
 A Liminal provider plugin released on its own. The app finds it through the entry point group
-`liminal.providers` and lists it on the Plugins view and in `python -m liminal plugins`
+`liminal.providers` and lists it on the Plugins view and in `liminal plugins`
 as `package: liminal-plugin-cboe`, with this package's version.
 
 ## Install
@@ -13,10 +13,10 @@ as `package: liminal-plugin-cboe`, with this package's version.
 Into the app's environment, from the app's folder:
 
 ```powershell
-.venv\Scripts\python.exe -m pip install "liminal-plugin-cboe @ git+https://github.com/pcxmac-dev/liminal-plugin-cboe@v1.2.0"
+.venv\Scripts\python.exe -m pip install "liminal-plugin-cboe @ git+https://github.com/pcxmac-dev/liminal-plugin-cboe@v1.2.1"
 ```
 
-or with the app's plugins (`pip install -e ".[plugins]"` in liminal). The app loads it on its next
+or with the app's plugins (`pip install -e ".[plugins]"` in liminal-app). The app loads it on its next
 start.
 
 ## Compatibility
@@ -28,7 +28,7 @@ app of another major, or one older than 1.6, leaves it out and says why on the P
 
 ```powershell
 python -m venv .venv
-.venv\Scripts\python.exe -m pip install "liminal @ git+https://github.com/pcxmac-dev/liminal@feature/collector"
+.venv\Scripts\python.exe -m pip install "liminal-lib @ git+https://github.com/pcxmac-dev/liminal-lib@main"
 .venv\Scripts\python.exe -m pip install -e ".[dev]"
 .venv\Scripts\python.exe -m pytest -q
 ```
