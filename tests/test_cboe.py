@@ -16,7 +16,8 @@ from liminal_lib.sources.http import PublicClient
 from liminal_lib.symbols import resolve
 
 import liminal_plugin_cboe
-from liminal_plugin_cboe import PER_DAY, PER_RUN, TIER, CboeSource
+from liminal_plugin_cboe import (FUTURES_PER_DAY, FUTURES_PER_RUN, FUTURES_TIER, PER_DAY, PER_RUN, TIER, CboeFuturesSource,
+                                 CboeSource, read_contract, vx_expiration)
 
 from .conftest import FakeResponse, FakeSession
 
@@ -55,16 +56,63 @@ def test_a_cboe_file_that_reads_as_nothing_is_an_error_not_an_empty_history():
         next(_cboe("")[0].bar_pages("I:SKEW", date(2007, 1, 1), date(2007, 1, 31), "day"))
 
 
-def test_the_app_loads_it_from_this_package_with_its_own_version():
+VX_FILE = ("Trade Date,Futures,Open,High,Low,Close,Settle,Change,Total Volume,EFP,Open Interest\n"
+           "2026-02-23,X (Nov 2026),0.0000,21.0000,0.0000,0.0000,22.775,0,0,0,0\n"
+           "2026-03-24,X (Nov 2026),0.0000,20.6000,24.2500,0.0000,23.8515,0.1765,0,0,0\n"
+           "2026-10-30,X (Nov 2026),18.8000,21.9500,18.7500,20.1500,20.3603,2.2099,235927,1368,175455\n"
+           "2026-11-02,X (Nov 2026),20.1500,20.5500,18.8500,20.3500,20.3752,0.0149,143670,0,173051\n")
+
+
+def _futures(*responses):
+    session = FakeSession(list(responses))
+    return CboeFuturesSource(PublicClient("https://x.test/files", session=session, sleep=lambda s: None)), session
+
+
+def test_a_vx_contract_is_read_from_its_settlement_days_file():
+    src, session = _futures(FakeResponse(200, VX_FILE), FakeResponse(404, "not found"))
+    bars = next(src.bar_pages("VXX6", date(2026, 10, 1), date(2026, 11, 30), "day", asset="future"))
+    assert session.calls[0][0].endswith("/VX/VX_2026-11-18.csv")  # November 2026: settled 30 days before December's third Friday
+    assert [(b["c"], b["v"]) for b in bars] == [(20.15, 235927.0), (20.35, 143670.0)]
+    assert bars[0]["t"] == ms(datetime(2026, 10, 30, tzinfo=ET)) and bars[0]["h"] == 21.95 and bars[0]["l"] == 18.75
+    early = next(src.bar_pages("VXX26", date(2026, 2, 1), date(2026, 3, 31), "day", asset="future"))  # the same file, cached
+    assert [(b["o"], b["h"], b["l"], b["c"], b["v"]) for b in early] == [(22.775,) * 4 + (0.0,), (23.8515,) * 4 + (0.0,)]
+    assert len(session.calls) == 1
+    assert next(src.bar_pages("VXZ6", date(2026, 10, 1), date(2026, 11, 30), "day", asset="future")) == []  # no file yet: 404
+    assert session.calls[1][0].endswith("/VX/VX_2026-12-16.csv")
+    newest = next(src.bar_pages("VXX6", date(2026, 1, 1), date(2026, 12, 31), "day", descending=True, asset="future", limit=1))
+    assert [b["t"] for b in newest] == [ms(datetime(2026, 11, 2, tzinfo=ET))]
+    with pytest.raises(NotEntitled):
+        next(src.bar_pages("ESZ6", date(2026, 10, 1), date(2026, 11, 30), "day", asset="future"))
+    with pytest.raises(NotEntitled):
+        next(src.bar_pages("VXX6", date(2026, 10, 1), date(2026, 11, 30), "minute", asset="future"))
+    assert src.covers("VX") and src.covers("VXX26") and not src.covers("ESZ6")
+    assert src.futures_products() == [{"ticker": "VX", "name": "Cboe Volatility Index (VIX) futures", "exchange": "XCBF",
+                                       "type": "volatility", "figi": None, "kind": "future"}]
+    assert src.instrument("VXX6").primary_exchange.mic == "XCBF" and [e.acronym for e in src.exchanges()] == ["CFE"]
+    assert read_contract("Trade Date,Futures,Open,High,Low,Close,Settle\nbad,,,,,,\n2026-01-02,X,0,0,0,0,0\n") == []
+
+
+def test_vx_settlement_dates_follow_cboes_rule():
+    assert vx_expiration(date(2026, 11, 1)) == date(2026, 11, 18)  # December 18 2026 is the third Friday: 30 days before
+    assert vx_expiration(date(2026, 12, 1)) == date(2026, 12, 16)  # January 15 2027
+    assert vx_expiration(date(2025, 3, 1)) == date(2025, 3, 18)  # Good Friday 2025 was April's third Friday: Thursday 17th, a Tuesday
+    assert vx_expiration(date(2026, 1, 1)) == date(2026, 1, 21)  # February 20 2026
+
+
+def test_the_app_loads_its_two_feeds_from_this_package_with_its_own_version():
     registry.reload()
-    p = provider("cboe")
-    assert p is not None, dict(registry.errors())
-    assert p.origin in {"package: liminal-plugin-cboe (liminal_plugin_cboe:PLUGIN)", "plugins/liminal-plugin-cboe (liminal_plugin_cboe:PLUGIN)"}  # its package, or its checkout in the workspace\'s plugin directory
-    assert p.version == version("liminal-plugin-cboe") and liminal_plugin_cboe.PLUGIN.version == ""
-    assert registry.api_refusal(p.api) is None
+    assert [p.name for p in liminal_plugin_cboe.PLUGINS] == ["cboe", "cboefutures"] and not hasattr(liminal_plugin_cboe, "PLUGIN")
+    for name in ("cboe", "cboefutures"):
+        p = provider(name)
+        assert p is not None, dict(registry.errors())
+        assert p.origin in {"package: liminal-plugin-cboe (liminal_plugin_cboe)", "plugins/liminal-plugin-cboe (liminal_plugin_cboe)"}  # its package, or its checkout in the workspace\'s plugin directory
+        assert p.version == version("liminal-plugin-cboe") and p.api == "1.12"
+        assert registry.api_refusal(p.api) is None
+    assert liminal_plugin_cboe.INDICES.version == "" and liminal_plugin_cboe.FUTURES.version == ""
     assert not [why for where, why in registry.errors() if "cboe" in where or "cboe" in why]
     row = {r["name"]: r for r in registry.menu()}["cboe"]
-    assert (row["version"], row["api"]) == (version("liminal-plugin-cboe"), "1.6")
+    assert (row["version"], row["api"]) == (version("liminal-plugin-cboe"), "1.12")
+    assert registry.plugin_feeds("cboe") == ["cboe", "cboefutures"] and registry.plugin_of("cboefutures") == "cboe"
 
 
 def test_it_keeps_the_facts_it_had_built_in():
@@ -76,3 +124,11 @@ def test_it_keeps_the_facts_it_had_built_in():
     assert is_archive("cboe") and markets("cboe", s) == {"index": "index"}
     assert supports("cboe", resolve("I:VIX")) and not supports("cboe", resolve("IXIC"))
     assert composite.feed_kind("cboe", "index") == "official"
+    # the VIX futures feed: the same public server, live (the front contracts trade on), its own market
+    fut = s.for_source("cboefutures")
+    assert (fut.tier, fut.max_requests_per_run, fut.max_requests_per_day) == (FUTURES_TIER, FUTURES_PER_RUN, FUTURES_PER_DAY)
+    assert not is_archive("cboefutures") and markets("cboefutures", s) == {"future": "cfe"}
+    assert supports("cboefutures", resolve("VX1!")) and supports("cboefutures", resolve("VX2!"))
+    assert not supports("cboefutures", resolve("ES1!")) and not supports("cboefutures", resolve("I:VIX"))
+    assert composite.feed_kind("cboefutures", "future") == "official"
+    assert (provider("cboefutures").part_of, provider("cboefutures").account) == ("cboe", "cboe")

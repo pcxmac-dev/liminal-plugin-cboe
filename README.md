@@ -4,6 +4,11 @@ Cboe for [Liminal](https://github.com/pcxmac-dev/liminal-app): the daily history
 (VIX from 1990, VIX9D, VIX3M, VVIX, SKEW and the other volatility indices), read from Cboe's public
 history files. No key. It is a closed archive: once an index's history is in, it is not asked again.
 
+And VIX futures (`VX1!`, `VX2!`: a second feed of the plugin, `cboefutures`): Cboe publishes a daily
+file for each contract (from March 2004), which the feed reads by the contract's final settlement
+date; the library rolls the continuous chart from the contracts by volume. The feed is live: the
+contracts trading on get their new days each run. Daily bars only.
+
 A Liminal provider plugin released on its own. The app finds it through the entry point group
 `liminal.providers` and lists it on the Plugins view and in `liminal plugins`
 as `package: liminal-plugin-cboe`, with this package's version.
@@ -13,7 +18,7 @@ as `package: liminal-plugin-cboe`, with this package's version.
 Into the app's environment, from the app's folder:
 
 ```powershell
-.venv\Scripts\python.exe -m pip install "liminal-plugin-cboe @ git+https://github.com/pcxmac-dev/liminal-plugin-cboe@v1.2.1"
+.venv\Scripts\python.exe -m pip install "liminal-plugin-cboe @ git+https://github.com/pcxmac-dev/liminal-plugin-cboe@v1.3.0"
 ```
 
 or with the app's plugins (`pip install -e ".[plugins]"` in liminal-app). The app loads it on its next
@@ -21,8 +26,9 @@ start.
 
 ## Compatibility
 
-It is written for plugin API 1.6 (`PLUGIN.api`). An app offering 1.6 or a later 1.x loads it; an
-app of another major, or one older than 1.6, leaves it out and says why on the Plugins view.
+It is written for plugin API 1.12 (`PLUGINS`, each feed's `api`; liminal-lib 1.2.0 or later). An
+app offering 1.12 or a later 1.x loads it; an app of another major, or one older than 1.12, leaves it
+out and says why on the Plugins view.
 
 ## Develop
 
