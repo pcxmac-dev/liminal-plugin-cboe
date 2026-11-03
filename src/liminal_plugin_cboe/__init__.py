@@ -238,7 +238,8 @@ FUTURES = Provider(
     build=lambda settings, budget: CboeFuturesSource(public_client("cboe", FUTURES_URL, settings, budget)),
     assets=frozenset({"future"}),
     about="VIX futures' daily history from 2004: a public file a contract, the continuous chart VX1! from them (no key)",
-    tier=FUTURES_TIER, per_run=FUTURES_PER_RUN, per_day=FUTURES_PER_DAY, limits="none published (a public file server)",
+    tier=FUTURES_TIER, per_run=FUTURES_PER_RUN, per_day=FUTURES_PER_DAY,
+    limits="shares Cboe's window: one public file server, no limits published",
     kind="official", markets=lambda settings: {"future": "cfe"},
     provides={"future": ("day",)}, per_request={"day": None},  # one file per contract: its whole life
     bulk_resolution="day",

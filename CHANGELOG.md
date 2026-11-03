@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1 (2026-11-03)
+
+The VIX futures feed's limits line says it shares Cboe's window (one public server), as the Plugins view lists each
+feed's.
+
 ## 1.3.0 (2026-11-02)
 
 VIX futures (the user: "lets include futures"): a second feed of the plugin, `cboefutures`, reads Cboe's daily
