@@ -2,14 +2,16 @@
 
 ## 0.2.0 (2026-11-03)
 
-The plugin is a class on plugin API 2.0 (the class contract, liminal-lib 1.3.0; the user: "all the plugins under
+Renamed `plugin-integrator-cboe` (the package `plugin_integrator_cboe`; it was `liminal-plugin-cboe`) on 2026-11-03: the naming by system (plugins are `plugin-<app>-<name>`), on liminal-libs 1.4.0 (`liminal_libs`, the library renamed with it).
+
+The plugin is a class on plugin API 2.0 (the class contract, liminal-libs 1.3.0; the user: "all the plugins under
 liminal should basically follow inheritance/oop paradigm"): its two feeds are instances of `CboeIndices` and
 `CboeFutures`, both on `CboeFeed`, a `PublicFeedPlugin` (the source class on the contract's public client at its
 base URL; Cboe's files official, one file a symbol), what each declares its class attributes and what it does its
 methods (`markets`, `carries`; the futures' `build` holds its client under Cboe's account, one public file server).
 The futures feed declares its publication delay itself (`delays`: `cboe-futures`, end of day; the library's row
 stays). `INDICES` and `FUTURES` stay the module's instances, `PLUGINS` the pair; every fact, limit and string is as
-in 1.3.1. Its version is the release's, 0.2.0, as every Liminal plugin's on `release/0.2.0`; requires liminal-lib
+in 1.3.1. Its version is the release's, 0.2.0, as every Liminal plugin's on `release/0.2.0`; requires liminal-libs
 1.3.0.
 
 ## 1.3.1 (2026-11-03)
@@ -30,11 +32,11 @@ plugin API 1.12.
 
 ## 1.2.1 (2026-11-02)
 
-The plugin imports the library as `liminal_lib` and depends on liminal-lib (the app, renamed liminal-app, is no longer needed to run the tests; the user, 2026-11-02: "lets rename the app to liminal-app").
+The plugin imports the library as `liminal_libs` and depends on liminal-libs (the app, renamed liminal-charts, is no longer needed to run the tests; the user, 2026-11-02: "lets rename the app to liminal-charts").
 
 ## 1.2.0 (2026-10-31)
 
-- Released as its own package, `liminal-plugin-cboe`, registered under the entry point group
+- Released as its own package, `plugin-integrator-cboe`, registered under the entry point group
   `liminal.providers`; its version is the distribution's.
 - Its plan and request caps are in it (`TIER`, `PER_RUN`, `PER_DAY`), no longer in the app's
   `config.PUBLIC_FEEDS`.

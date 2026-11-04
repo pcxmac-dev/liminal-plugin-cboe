@@ -4,11 +4,11 @@ file a contract, the continuous chart VX1! built from them by the library's roll
 
 A Liminal plugin released on its own, registered under the entry point group `liminal.providers`:
 one plugin, two feeds (PLUGINS: the indices' archive `cboe`, the futures `cboefutures`), each an
-instance of a class of this module on the class contract (plugin API 2.0, liminal-lib 1.3.0:
-liminal_lib.sources.plugin.FeedPlugin; what a feed declares its class attributes, what it does its
-methods). The feeds share `CboeFeed`, a keyless public feed's plugin (liminal_lib.sources.archive:
+instance of a class of this module on the class contract (plugin API 2.0, liminal-libs 1.3.0:
+liminal_libs.sources.plugin.FeedPlugin; what a feed declares its class attributes, what it does its
+methods). The feeds share `CboeFeed`, a keyless public feed's plugin (liminal_libs.sources.archive:
 PublicFeedPlugin). Its version is its distribution's (pyproject.toml); it relies on the contract and
-nothing of the app outside it (docs/ARCHITECTURE.md in liminal-app: "Providers are plugins").
+nothing of the app outside it (docs/ARCHITECTURE.md in liminal-charts: "Providers are plugins").
 """
 from __future__ import annotations
 
@@ -18,15 +18,15 @@ import re
 from datetime import date, datetime, timedelta
 from typing import Iterator
 
-from liminal_lib.config import Tier
-from liminal_lib.errors import NotEntitled, SourceError
-from liminal_lib.freshness import Delay
-from liminal_lib.futures import contract_month
-from liminal_lib.models import Exchange, Instrument, country
-from liminal_lib.sessions import MarketCalendar
-from liminal_lib.sources.archive import ET, Archive, PublicFeedPlugin, bounds, ms
-from liminal_lib.sources.http import PublicClient
-from liminal_lib.sources.registry import public_client
+from liminal_libs.config import Tier
+from liminal_libs.errors import NotEntitled, SourceError
+from liminal_libs.freshness import Delay
+from liminal_libs.futures import contract_month
+from liminal_libs.models import Exchange, Instrument, country
+from liminal_libs.sessions import MarketCalendar
+from liminal_libs.sources.archive import ET, Archive, PublicFeedPlugin, bounds, ms
+from liminal_libs.sources.http import PublicClient
+from liminal_libs.sources.registry import public_client
 
 BASE_URL = "https://cdn-api.cboe.com/api/global/us_indices/daily_prices"
 # its plan and caps: a public file server with no published limits, one file an index
