@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0 (2026-11-03)
+
+The plugin is a class on plugin API 2.0 (the class contract, liminal-lib 1.3.0; the user: "all the plugins under
+liminal should basically follow inheritance/oop paradigm"): its two feeds are instances of `CboeIndices` and
+`CboeFutures`, both on `CboeFeed`, a `PublicFeedPlugin` (the source class on the contract's public client at its
+base URL; Cboe's files official, one file a symbol), what each declares its class attributes and what it does its
+methods (`markets`, `carries`; the futures' `build` holds its client under Cboe's account, one public file server).
+The futures feed declares its publication delay itself (`delays`: `cboe-futures`, end of day; the library's row
+stays). `INDICES` and `FUTURES` stay the module's instances, `PLUGINS` the pair; every fact, limit and string is as
+in 1.3.1. Its version is the release's, 0.2.0, as every Liminal plugin's on `release/0.2.0`; requires liminal-lib
+1.3.0.
+
 ## 1.3.1 (2026-11-03)
 
 The VIX futures feed's limits line says it shares Cboe's window (one public server), as the Plugins view lists each

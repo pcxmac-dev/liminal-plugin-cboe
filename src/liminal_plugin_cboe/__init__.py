@@ -2,10 +2,13 @@
 archive; and VIX futures' daily history from 2004 (a feed of this plugin, `cboefutures`: one public
 file a contract, the continuous chart VX1! built from them by the library's roll rules).
 
-A Liminal plugin released on its own (liminal.sources.registry: Provider), registered under the
-entry point group `liminal.providers`: one plugin, two feeds (PLUGINS: the indices' archive `cboe`,
-the futures `cboefutures`). Its version is its distribution's (pyproject.toml); it relies on plugin
-API 1.12 and nothing of the app outside it (docs/ARCHITECTURE.md in liminal: "Providers are plugins").
+A Liminal plugin released on its own, registered under the entry point group `liminal.providers`:
+one plugin, two feeds (PLUGINS: the indices' archive `cboe`, the futures `cboefutures`), each an
+instance of a class of this module on the class contract (plugin API 2.0, liminal-lib 1.3.0:
+liminal_lib.sources.plugin.FeedPlugin; what a feed declares its class attributes, what it does its
+methods). The feeds share `CboeFeed`, a keyless public feed's plugin (liminal_lib.sources.archive:
+PublicFeedPlugin). Its version is its distribution's (pyproject.toml); it relies on the contract and
+nothing of the app outside it (docs/ARCHITECTURE.md in liminal-app: "Providers are plugins").
 """
 from __future__ import annotations
 
@@ -17,12 +20,13 @@ from typing import Iterator
 
 from liminal_lib.config import Tier
 from liminal_lib.errors import NotEntitled, SourceError
+from liminal_lib.freshness import Delay
 from liminal_lib.futures import contract_month
 from liminal_lib.models import Exchange, Instrument, country
 from liminal_lib.sessions import MarketCalendar
-from liminal_lib.sources.archive import ET, Archive, bounds, ms
+from liminal_lib.sources.archive import ET, Archive, PublicFeedPlugin, bounds, ms
 from liminal_lib.sources.http import PublicClient
-from liminal_lib.sources.registry import Provider, public_client
+from liminal_lib.sources.registry import public_client
 
 BASE_URL = "https://cdn-api.cboe.com/api/global/us_indices/daily_prices"
 # its plan and caps: a public file server with no published limits, one file an index
@@ -221,29 +225,73 @@ class CboeFuturesSource(Archive):
                           details={"source": "Cboe futures daily files"})
 
 
-INDICES = Provider(
-    api="1.12",  # the contract it needs (sources.http, sources.archive, part_of); its version: the distribution's
-    name="cboe", title="Cboe",
-    build=lambda settings, budget: CboeSource(public_client("cboe", BASE_URL, settings, budget)),
-    assets=frozenset({"index"}), order=50, about="daily history of Cboe's indices, VIX from 1990 (no key)",
-    archival=True, tier=TIER, per_run=PER_RUN, per_day=PER_DAY, limits="none published (a public file server)",
-    kind="official", markets=lambda settings: {"index": "index"},
-    provides={"index": ("day",)}, per_request={"day": None},  # one file per index: its whole history
-    carries=lambda spec: spec.source_ticker.upper().removeprefix("I:") in CBOE_INDICES,
-)
+class CboeFeed(PublicFeedPlugin):
+    """What the plugin's two feeds are alike (plugin API 2.0): a keyless public feed's plugin, its
+    source (`source_class`) on the contract's public client at its `base_url`, its plan and caps its
+    fixed `tier`, `per_run` and `per_day`; Cboe's own files (`kind` official), one file a symbol
+    holding its whole history (`per_request`). Each feed declares the rest of its own."""
 
-# VIX futures: a feed of this plugin on the same public file server (no key, no plan), live
-FUTURES = Provider(
-    api="1.12", name="cboefutures", title="VIX futures", part_of="cboe", account="cboe", order=51,
-    build=lambda settings, budget: CboeFuturesSource(public_client("cboe", FUTURES_URL, settings, budget)),
-    assets=frozenset({"future"}),
-    about="VIX futures' daily history from 2004: a public file a contract, the continuous chart VX1! from them (no key)",
-    tier=FUTURES_TIER, per_run=FUTURES_PER_RUN, per_day=FUTURES_PER_DAY,
-    limits="shares Cboe's window: one public file server, no limits published",
-    kind="official", markets=lambda settings: {"future": "cfe"},
-    provides={"future": ("day",)}, per_request={"day": None},  # one file per contract: its whole life
-    bulk_resolution="day",
-    carries=lambda spec: spec.source_ticker.upper() in PRODUCTS,
-)
+    api = "2.0"  # the contract it needs (the class contract; sources.http, sources.archive, part_of); its version: the distribution's
+    kind = "official"
+    per_request = {"day": None}  # one file per symbol (an index, a contract): its whole history
 
+
+class CboeIndices(CboeFeed):
+    """The indices' archive: daily history of Cboe's indices, VIX from 1990 (no key)."""
+
+    name = "cboe"
+    title = "Cboe"
+    base_url = BASE_URL
+    source_class = CboeSource
+    assets = frozenset({"index"})
+    order = 50
+    about = "daily history of Cboe's indices, VIX from 1990 (no key)"
+    archival = True
+    tier = TIER
+    per_run, per_day = PER_RUN, PER_DAY
+    limits = "none published (a public file server)"
+    provides = {"index": ("day",)}
+
+    def markets(self, settings):
+        return {"index": "index"}
+
+    def carries(self, spec):
+        return spec.source_ticker.upper().removeprefix("I:") in CBOE_INDICES
+
+
+class CboeFutures(CboeFeed):
+    """VIX futures: a feed of this plugin on the same public file server (no key, no plan), live."""
+
+    name = "cboefutures"
+    title = "VIX futures"
+    part_of = "cboe"
+    account = "cboe"
+    order = 51
+    base_url = FUTURES_URL
+    source_class = CboeFuturesSource
+    assets = frozenset({"future"})
+    about = "VIX futures' daily history from 2004: a public file a contract, the continuous chart VX1! from them (no key)"
+    tier = FUTURES_TIER
+    per_run, per_day = FUTURES_PER_RUN, FUTURES_PER_DAY
+    limits = "shares Cboe's window: one public file server, no limits published"
+    provides = {"future": ("day",)}
+    bulk_resolution = "day"
+    # when its data is published (the library's freshness.PLAN_DELAYS row for cboe-futures, declared here
+    # too): a contract's day comes with its settlement after the session, so its day bars are expected
+    # once the session is over, like a stock's on an end-of-day plan
+    delays = {"cboe-futures": {"future": Delay("eod")}}
+
+    def build(self, settings, request_budget):
+        """Its source on Cboe's public client: the window and the day cap are held under the account its
+        requests count against (`account`, the indices' feed: one public file server, one window)."""
+        return self.source_class(public_client(self.account, self.base_url, settings, request_budget))
+
+    def markets(self, settings):
+        return {"future": "cfe"}
+
+    def carries(self, spec):
+        return spec.source_ticker.upper() in PRODUCTS
+
+
+INDICES, FUTURES = CboeIndices(), CboeFutures()
 PLUGINS = (INDICES, FUTURES)  # one plugin, two feeds: the indices' archive, and the VIX futures

@@ -7,12 +7,14 @@ from importlib.metadata import version
 
 import pytest
 
-from liminal_lib import composite
+from liminal_lib import composite, freshness
 from liminal_lib.config import load_settings
 from liminal_lib.errors import NotEntitled, SourceError
+from liminal_lib.freshness import Delay
 from liminal_lib.sources import is_archive, markets, provider, rate_window, registry, supports
-from liminal_lib.sources.archive import ET, ms
+from liminal_lib.sources.archive import ET, PublicFeedPlugin, ms
 from liminal_lib.sources.http import PublicClient
+from liminal_lib.sources.registry import FeedPlugin
 from liminal_lib.symbols import resolve
 
 import liminal_plugin_cboe
@@ -106,12 +108,12 @@ def test_the_app_loads_its_two_feeds_from_this_package_with_its_own_version():
         p = provider(name)
         assert p is not None, dict(registry.errors())
         assert p.origin in {"package: liminal-plugin-cboe (liminal_plugin_cboe)", "plugins/liminal-plugin-cboe (liminal_plugin_cboe)"}  # its package, or its checkout in the workspace\'s plugin directory
-        assert p.version == version("liminal-plugin-cboe") and p.api == "1.12"
+        assert p.version == version("liminal-plugin-cboe") and p.api == "2.0"
         assert registry.api_refusal(p.api) is None
     assert liminal_plugin_cboe.INDICES.version == "" and liminal_plugin_cboe.FUTURES.version == ""
     assert not [why for where, why in registry.errors() if "cboe" in where or "cboe" in why]
     row = {r["name"]: r for r in registry.menu()}["cboe"]
-    assert (row["version"], row["api"]) == (version("liminal-plugin-cboe"), "1.12")
+    assert (row["version"], row["api"]) == (version("liminal-plugin-cboe"), "2.0")
     assert registry.plugin_feeds("cboe") == ["cboe", "cboefutures"] and registry.plugin_of("cboefutures") == "cboe"
 
 
@@ -132,3 +134,41 @@ def test_it_keeps_the_facts_it_had_built_in():
     assert not supports("cboefutures", resolve("ES1!")) and not supports("cboefutures", resolve("I:VIX"))
     assert composite.feed_kind("cboefutures", "future") == "official"
     assert (provider("cboefutures").part_of, provider("cboefutures").account) == ("cboe", "cboe")
+
+
+def test_each_feed_is_a_class_on_plugin_api_2_0():
+    """The two feeds are instances of the module's classes (plugin API 2.0, liminal-lib 1.3.0): CboeFeed holds
+    what both declare alike, each feed what is its own; the registry loads them as those classes."""
+    assert isinstance(liminal_plugin_cboe.INDICES, liminal_plugin_cboe.CboeIndices)
+    assert isinstance(liminal_plugin_cboe.FUTURES, liminal_plugin_cboe.CboeFutures)
+    for p in liminal_plugin_cboe.PLUGINS:
+        assert isinstance(p, liminal_plugin_cboe.CboeFeed) and isinstance(p, PublicFeedPlugin) and isinstance(p, FeedPlugin)
+        assert p.api == "2.0" and not p.is_record and p.kind == "official" and p.request_bars("day") is None
+    loaded = registry.reload()
+    assert type(loaded["cboe"]) is liminal_plugin_cboe.CboeIndices and loaded["cboe"].api == "2.0"
+    assert type(loaded["cboefutures"]) is liminal_plugin_cboe.CboeFutures and loaded["cboefutures"].api == "2.0"
+    # the hooks each gives: its build (the indices' the public feed's own, the futures' on Cboe's account), its
+    # markets and what it carries; the rest the contract's defaults (its fixed tier and caps, the plan's rate)
+    for name in ("cboe", "cboefutures"):
+        assert loaded[name].gives("build") and loaded[name].gives("markets") and loaded[name].gives("carries")
+        assert not loaded[name].gives("view") and not loaded[name].gives("rate") and not loaded[name].gives("scan")
+        assert not loaded[name].has_settings
+    # the futures feed declares its publication delay itself, the library's row for it still in place
+    assert liminal_plugin_cboe.FUTURES.delays == {"cboe-futures": {"future": Delay("eod")}}
+    assert liminal_plugin_cboe.FUTURES.delays["cboe-futures"] == freshness.PLAN_DELAYS["cboe-futures"]
+    assert not liminal_plugin_cboe.INDICES.delays and freshness.plan_delay(FUTURES_TIER, "future").kind == "eod"
+
+
+def test_each_feed_builds_its_source_on_cboes_public_client(monkeypatch):
+    held = []
+
+    def fake_public_client(name, base_url, settings, budget):
+        held.append((name, base_url, budget))
+        return PublicClient(base_url, session=FakeSession([]), sleep=lambda s: None)
+    monkeypatch.setattr(registry, "public_client", fake_public_client)  # the indices': the public feed's own build
+    monkeypatch.setattr(liminal_plugin_cboe, "public_client", fake_public_client)  # the futures': on Cboe's account
+    s = load_settings(env={}, env_file=None)
+    indices, futures = liminal_plugin_cboe.INDICES.build(s, 7), liminal_plugin_cboe.FUTURES.build(s, 3)
+    assert isinstance(indices, CboeSource) and isinstance(futures, CboeFuturesSource)
+    assert held == [("cboe", liminal_plugin_cboe.BASE_URL, 7), ("cboe", liminal_plugin_cboe.FUTURES_URL, 3)]  # one window
+    assert indices.client.base_url == liminal_plugin_cboe.BASE_URL and futures.client.base_url == liminal_plugin_cboe.FUTURES_URL

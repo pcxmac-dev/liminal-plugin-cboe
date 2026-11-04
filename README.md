@@ -18,7 +18,7 @@ as `package: liminal-plugin-cboe`, with this package's version.
 Into the app's environment, from the app's folder:
 
 ```powershell
-.venv\Scripts\python.exe -m pip install "liminal-plugin-cboe @ git+https://github.com/pcxmac-dev/liminal-plugin-cboe@v1.3.0"
+.venv\Scripts\python.exe -m pip install "liminal-plugin-cboe @ git+https://github.com/pcxmac-dev/liminal-plugin-cboe@v0.2.0"
 ```
 
 or with the app's plugins (`pip install -e ".[plugins]"` in liminal-app). The app loads it on its next
@@ -26,9 +26,10 @@ start.
 
 ## Compatibility
 
-It is written for plugin API 1.12 (`PLUGINS`, each feed's `api`; liminal-lib 1.2.0 or later). An
-app offering 1.12 or a later 1.x loads it; an app of another major, or one older than 1.12, leaves it
-out and says why on the Plugins view.
+It is written for plugin API 2.0, the class contract (`PLUGINS`: each feed an instance of a `FeedPlugin`
+subclass, `CboeIndices` and `CboeFutures` on the package's `CboeFeed`, a `PublicFeedPlugin`; liminal-lib
+1.3.0 or later). An app offering 2.0 or a later 2.x loads it; an app of another major leaves it out and
+says why on the Plugins view.
 
 ## Develop
 
